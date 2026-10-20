@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AstraRelay 工作台{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="workspace-page">
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

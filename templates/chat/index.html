@@ -1,0 +1,127 @@
+{% extends "workspace_base.html" %}
+
+{% block title %}AstraRelay &#24037;&#20316;&#21488;{% endblock %}
+
+{% block content %}
+<div class="app-shell" id="app-shell">
+  <nav id="task-navigation" class="session-sidebar" aria-label="&#24037;&#20316;&#20250;&#35805;">
+    <div class="sidebar-top">
+      <a class="workspace-brand" href="/workspace" aria-label="AstraRelay &#24037;&#20316;&#21488;">
+        <span aria-hidden="true">AI</span><strong>AstraRelay</strong>
+      </a>
+      <button id="session-sidebar-close" class="session-sidebar-close" type="button" aria-label="关闭会话侧栏" aria-controls="task-navigation">&lsaquo;</button>
+    </div>
+    <div class="rail-heading">
+      <p>&#26368;&#36817;&#23545;&#35805;</p>
+      <button type="button" class="new-session" id="new-session"><span aria-hidden="true">＋</span>&#26032;&#23545;&#35805;</button>
+    </div>
+    <section id="conversation-list" class="conversation-list" aria-label="&#21382;&#21490;&#23545;&#35805;"></section>
+    <div class="rail-footer">
+      <a class="rail-home-link" href="{{ url_for('home') }}"><span aria-hidden="true">⌂</span>首页</a>
+      <a class="rail-home-link" href="/model-plaza"><span aria-hidden="true">◇</span>&#27169;&#22411;&#24191;&#22330;</a>
+      {% if not session.get('is_admin') %}
+      <a class="rail-home-link" href="/account/security"><span aria-hidden="true">⚙</span>&#36134;&#25143;&#23433;&#20840;</a>
+      {% endif %}
+      <p class="rail-note">&#27169;&#22411;&#32452;&#21512;&#25353;&#20250;&#35805;&#20445;&#23384;&#65292;&#38543;&#26102;&#28155;&#21152;&#25110;&#31227;&#38500;&#12290;</p>
+    </div>
+  </nav>
+  <button id="session-backdrop" class="session-backdrop" type="button" aria-label="关闭会话侧栏" hidden></button>
+
+  <main class="chat-panel chat-container" aria-label="&#21327;&#20316;&#23545;&#35805;">
+    <header class="chat-heading">
+      <div class="workspace-mobile-header">
+        <button id="mobile-session-toggle" class="mobile-session-toggle" type="button" aria-controls="task-navigation" aria-expanded="true" aria-label="打开会话侧栏">☰</button>
+        <span class="workspace-mobile-title">AstraRelay Workspace</span>
+      </div>
+      <div class="chat-heading-copy">
+        <p class="eyebrow">&#21327;&#20316;&#31354;&#38388;</p><h1>&#26032;&#23545;&#35805;</h1>
+      </div>
+      <div class="task-heading-actions">
+        <span id="workspace-task-mode" class="workspace-task-mode" aria-live="polite">&#25991;&#23383;&#23545;&#35805;</span>
+        <button id="model-drawer-toggle" class="drawer-toggle" type="button" aria-controls="model-drawer" aria-expanded="false"><span aria-hidden="true">◎</span>&#36873;&#25321;&#27169;&#22411;</button>
+        <button id="mobile-agent-toggle" class="mobile-agent-toggle" type="button" aria-controls="model-drawer" aria-expanded="false">&#27169;&#22411;</button>
+      </div>
+    </header>
+
+    <p id="no-model-notice" class="no-model-notice" role="alert" hidden>&#35831;&#20808;&#36873;&#25321;&#33267;&#23569;&#19968;&#20010;&#21327;&#20316;&#27169;&#22411;&#12290;</p>
+    <section id="workspace-empty-state" class="workspace-empty-state" aria-labelledby="workspace-empty-title">
+      <div class="empty-state-mark" aria-hidden="true">✦</div>
+      <h2 id="workspace-empty-title">&#20934;&#22791;&#22909;&#20102;&#65292;&#38543;&#26102;&#24320;&#22987;</h2>
+      <p>&#36873;&#25321;&#19968;&#20010;&#25110;&#22810;&#20010;&#27169;&#22411;&#65292;&#25226;&#20219;&#21153;&#20132;&#32473;&#22810;&#22823;&#33041;&#21327;&#21516;&#23436;&#25104;&#12290;</p>
+      <div class="empty-state-suggestions" aria-label="&#24555;&#36895;&#24320;&#22987;">
+        <button type="button" data-prompt="帮我梳理今天最重要的三项工作">梳理今日工作</button>
+        <button type="button" data-prompt="帮我分析这项任务并给出执行计划">&#29983;&#25104;&#25191;&#34892;&#35745;&#21010;</button>
+        <button type="button" data-prompt="比较多个模型的方案并给出综合结论">&#22810;&#27169;&#22411;&#32508;&#21512;&#20998;&#26512;</button>
+      </div>
+    </section>
+    <section id="messages" class="message-timeline" aria-live="polite" aria-label="&#32842;&#22825;&#35760;&#24405;"></section>
+    <section id="collaboration-groups" class="collaboration-groups" aria-label="&#21327;&#20316;&#22238;&#22797;"></section>
+    <section id="task-progress" class="task-progress" aria-live="polite" aria-label="&#20219;&#21153;&#36827;&#24230;" hidden></section>
+
+    <section id="task-composer" aria-label="&#20219;&#21153;&#36755;&#20837;">
+      <input id="workspace-csrf-token" type="hidden" value="{{ csrf_token() }}">
+      <input id="workspace-attachment-input" type="file" hidden multiple accept=".png,.jpg,.jpeg,.webp,.pdf,.docx,.txt,.md,.csv,.json,.py,.js,.ts,.java,.go,.c,.cpp,.h,.html,.css,.xml,.yaml,.yml,.sql">
+      <div id="workspace-attachment-list" class="workspace-attachment-list" aria-live="polite"></div>
+      <p id="workspace-attachment-status" class="workspace-attachment-status" aria-live="polite" hidden></p>
+      <form id="chat-form" class="composer input-area">
+        <div id="mention-menu" class="mention-menu" role="listbox" aria-label="&#27169;&#22411;&#25552;&#21450;&#36873;&#25321;" hidden></div>
+        <button id="composer-tools-toggle" class="composer-tools-toggle" type="button" aria-controls="workspace-attachment-input" aria-label="&#28155;&#21152;&#38468;&#20214;">＋</button>
+        <label class="sr-only" for="message">&#36755;&#20837;&#28040;&#24687;</label>
+        <input id="message" name="message" type="text" autocomplete="off" placeholder="&#32473; AstraRelay &#21457;&#36865;&#28040;&#24687;" role="combobox" aria-autocomplete="list" aria-controls="mention-menu" aria-expanded="false" required>
+        <button id="send" type="submit" aria-label="&#21457;&#36865;&#28040;&#24687;">&#8593;</button>
+        <button id="stop-generation" type="button" hidden>&#20572;&#27490;</button>
+      </form>
+      <p class="composer-hint">AstraRelay &#21487;&#33021;&#20250;&#20986;&#38169;&#65292;&#35831;&#26680;&#23545;&#37325;&#35201;&#20449;&#24687;&#12290;</p>
+    </section>
+  </main>
+
+  <button id="model-drawer-backdrop" class="model-drawer-backdrop" type="button" aria-label="&#20851;&#38381;&#27169;&#22411;&#25277;&#23625;" hidden></button>
+  <aside id="model-drawer" class="agent-sidebar model-drawer" aria-label="&#27169;&#22411;&#25277;&#23625;" aria-hidden="true">
+    <div id="collaboration-panel">
+      <div class="agent-sidebar-heading">
+        <div><p class="eyebrow">&#21327;&#20316;&#27169;&#22411;</p><h2>&#36873;&#25321;&#27169;&#22411;</h2></div>
+        <button id="model-drawer-close" class="drawer-close" type="button" aria-label="&#20851;&#38381;&#27169;&#22411;&#25277;&#23625;">&times;</button>
+      </div>
+      <section id="workspace-catalog-status" class="workspace-catalog-status" aria-live="polite" hidden>
+        <strong id="workspace-catalog-message"></strong>
+        <p id="workspace-catalog-detail"></p>
+        <button id="workspace-catalog-retry" type="button" hidden>重新加载目录</button>
+      </section>
+      <section class="selected-models-section" aria-labelledby="selected-models-title">
+        <h3 id="selected-models-title">&#24050;&#36873;&#29992;&#27169;&#22411;</h3>
+        <label for="context-mode">&#26032;&#27169;&#22411;&#19978;&#19979;&#25991;</label>
+        <select id="context-mode"><option value="smart" selected>&#26234;&#33021;&#25688;&#35201;</option><option value="full">&#23436;&#25972;&#19978;&#19979;&#25991;</option><option value="from_now">&#20174;&#29616;&#22312;&#24320;&#22987;</option><option value="custom">&#33258;&#36873;&#28040;&#24687;</option></select>
+        <ul id="selected-model-list" class="selected-model-list" aria-live="polite"></ul>
+      </section>
+      <label class="sr-only" for="model-search">&#25628;&#32034;&#27169;&#22411;</label>
+      <input id="model-search" type="search" placeholder="&#25628;&#32034;&#21378;&#21830;&#25110;&#27169;&#22411;" autocomplete="off">
+      <section id="model-tree" class="model-tree" aria-label="&#21378;&#21830;&#19982;&#27169;&#22411;&#30446;&#24405;"></section>
+      <section class="model-adder" aria-labelledby="model-adder-title">
+        <h3 id="model-adder-title">&#24555;&#36895;&#28155;&#21152;</h3>
+        <label for="provider-select">&#21378;&#21830;</label><select id="provider-select" disabled></select>
+        <label for="model-select">&#27169;&#22411;</label><select id="model-select" disabled></select>
+        <button id="add-model" type="button" disabled>&#28155;&#21152;&#27169;&#22411;</button>
+      </section>
+      <section class="agent-status-section" aria-labelledby="agent-status-title"><h3 id="agent-status-title">&#23454;&#26102;&#29366;&#24577;</h3><ul id="agent-status-list" class="agent-status-list" aria-live="polite"></ul></section>
+    </div>
+  </aside>
+</div>
+
+<dialog id="capability-dialog" class="capability-dialog" aria-labelledby="capability-dialog-title" aria-describedby="capability-dialog-message">
+  <div class="capability-dialog-copy">
+    <p class="eyebrow">&#33021;&#21147;&#21305;&#37197;</p>
+    <h2 id="capability-dialog-title">&#38656;&#35201;&#19968;&#20010;&#36741;&#21161;&#27169;&#22411;</h2>
+    <p id="capability-dialog-message"></p>
+  </div>
+  <div id="capability-recommendations" class="capability-recommendations" role="radiogroup" aria-label="&#25512;&#33616;&#36741;&#21161;&#27169;&#22411;"></div>
+  <div class="capability-dialog-actions">
+    <button id="capability-dialog-cancel" type="button">&#21462;&#28040;</button>
+    <button id="capability-dialog-continue" type="button">&#28155;&#21152;&#24182;&#32487;&#32493;</button>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='task-polling.js') }}"></script>
+<script src="{{ url_for('static', filename='workspace.js') }}"></script>
+{% endblock %}

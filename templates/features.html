@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}探索平台能力｜AI 协作工作台{% endblock %}
+
+{% block head_extra %}
+<style>
+  .features-page { position: relative; isolation: isolate; overflow: hidden; }.features-glow { position: absolute; z-index: -1; width: min(60vw, 36rem); aspect-ratio: 1; border-radius: 50%; pointer-events: none; filter: blur(2rem); }.features-glow-one { top: -19rem; left: 50%; background: radial-gradient(circle, rgb(86 124 255 / 21%), rgb(104 70 224 / 8%) 45%, transparent 70%); transform: translateX(-50%); }.features-glow-two { right: -17rem; bottom: 3rem; background: radial-gradient(circle, rgb(42 191 255 / 13%), transparent 68%); }
+  .features-hero { width: min(100% - 2rem, 62rem); margin: 0 auto; padding: clamp(4.5rem, 10vw, 7rem) 0 3.25rem; text-align: center; }.features-hero .feature-kicker { border: 0; padding: 0; background: none; }.features-hero h1 { margin: 0; color: var(--ink); font-size: clamp(2.45rem, 7vw, 4.5rem); letter-spacing: -.05em; }.features-copy { max-width: 40rem; margin: 1.25rem auto 0; color: var(--ink-muted); font-size: 1.05rem; line-height: 1.8; }.features-hero a { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; margin-top: 2rem; border-radius: .7rem; padding: .6rem 1.1rem; font-weight: 750; text-decoration: none; }
+  .capability-grid { width: min(100% - 2rem, 72rem); display: grid; gap: 1rem; margin: 0 auto; padding-bottom: 5rem; }.capability-card { border: 1px solid var(--border); border-radius: 1.1rem; padding: 1.5rem; background: var(--surface); box-shadow: 0 .75rem 2rem rgb(61 78 128 / 7%); transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }.capability-card:hover { transform: translateY(-.2rem); border-color: #bdc8e6; box-shadow: 0 1rem 2.5rem rgb(61 78 128 / 12%); }.capability-icon { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: .8rem; color: var(--accent); background: #edf0ff; font-size: 1.1rem; font-weight: 800; }.capability-card h2 { margin: 1rem 0 .55rem; font-size: 1.2rem; }.capability-card p { margin: 0; color: var(--ink-muted); line-height: 1.75; }
+  @media (min-width: 48rem) { .capability-grid { grid-template-columns: repeat(3, 1fr); }.capability-card { padding: 1.75rem; } } @media (prefers-reduced-motion: reduce) { .capability-card { transition: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="features-page"><div class="features-glow features-glow-one" aria-hidden="true"></div><div class="features-glow features-glow-two" aria-hidden="true"></div>
+  <section class="features-hero"><p class="feature-kicker">PLATFORM CAPABILITIES</p><h1>探索平台能力</h1><p class="features-copy">让多个智能体在同一工作台中协同，为复杂问题提供更完整、更清晰的思考路径。</p><a href="/chat" class="site-button-primary">立即进入工作台</a></section>
+  <section class="capability-grid"><article class="capability-card"><div class="capability-icon">✦</div><h2>多模型协作</h2><p>选择多个已接入模型并行响应，在同一会话中获得不同视角，让分工与比较更直观。</p></article><article class="capability-card"><div class="capability-icon">→</div><h2>实时流式响应</h2><p>实时接收模型输出，随生成过程逐步呈现，减少等待完整内容时的空白感。</p></article><article class="capability-card"><div class="capability-icon">◉</div><h2>独立记忆空间</h2><p>为用户、会话与智能体保留独立上下文，支持持续协作并保留清晰的对话脉络。</p></article></section>
+</main>
+{% endblock %}

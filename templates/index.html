@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}AI 协作工作台｜多智能体协作平台{% endblock %}
+
+{% block head_extra %}
+<style>
+  .landing-hero { position: relative; isolation: isolate; overflow: hidden; border-bottom: 1px solid var(--border); }
+  .starfield, .starfield::before, .starfield::after { position: absolute; inset: 0; pointer-events: none; content: ""; }
+  .starfield { z-index: -4; opacity: .55; background-image: radial-gradient(circle at center, rgb(115 135 244 / 46%) 0.0625rem, transparent .1rem), radial-gradient(circle at center, rgb(156 174 255 / 36%) 0.0625rem, transparent .1rem); background-size: 5.4rem 5.4rem, 8.1rem 8.1rem; background-position: .5rem .75rem, 2.7rem 3.4rem; }
+  .starfield::before { opacity: .32; background-image: radial-gradient(circle at center, #fff 0.08rem, transparent .11rem); background-size: 12rem 12rem; background-position: 4.2rem 1.2rem; animation: star-drift 22s linear infinite; }
+  .starfield::after { background: linear-gradient(105deg, transparent 45%, rgb(115 135 244 / 10%), transparent 55%); }
+  .nebula { position: absolute; z-index: -3; width: min(52vw, 38rem); aspect-ratio: 1; border-radius: 50%; pointer-events: none; filter: blur(1.5rem); }
+  .nebula-one { top: -21rem; left: 50%; background: radial-gradient(circle, rgb(115 135 244 / 25%), rgb(179 146 255 / 13%) 40%, transparent 70%); transform: translateX(-50%); }
+  .nebula-two { right: -18rem; top: 13rem; background: radial-gradient(circle, rgb(74 188 229 / 18%), rgb(115 135 244 / 8%) 42%, transparent 70%); }
+  .orbital-system { position: absolute; z-index: -2; right: -9rem; bottom: -12rem; width: 35rem; height: 22rem; pointer-events: none; opacity: .58; transform: rotate(-13deg); }
+  .orbit { position: absolute; border: .0625rem solid rgb(82 103 214 / 18%); border-radius: 50%; }
+  .orbit-one { inset: 1.5rem 1.8rem; }.orbit-two { inset: 4.8rem 7rem; border-color: rgb(140 99 221 / 18%); }
+  .planet { position: absolute; display: block; border-radius: 50%; }.planet-primary { top: 2.4rem; right: 5.5rem; width: 3.4rem; height: 3.4rem; background: radial-gradient(circle at 30% 28%, #fff, #a8c8ff 30%, #667bd6 64%, #45509a); box-shadow: 0 0 2.5rem rgb(100 181 255 / 38%); }.planet-secondary { bottom: 3.1rem; left: 6.8rem; width: 1.25rem; height: 1.25rem; background: radial-gradient(circle at 30% 30%, #fff, #bd9fff 65%, #7550b4); }
+  .landing-wrap { width: min(100% - 2rem, 70rem); min-height: 35rem; margin: 0 auto; padding: clamp(5rem, 10vw, 8rem) 0; text-align: center; }
+  .landing-kicker, .feature-kicker { display: inline-flex; margin: 0 0 1.35rem; border: 1px solid #cbd5f3; border-radius: 999px; padding: .45rem .8rem; color: var(--accent); background: rgb(255 255 255 / 72%); font-size: .75rem; font-weight: 800; letter-spacing: .13em; }
+  .landing-title { max-width: 52rem; margin: 0 auto; color: var(--ink); font-size: clamp(2.75rem, 8vw, 5.5rem); line-height: 1.06; letter-spacing: -.055em; }.landing-title span { color: var(--accent); }
+  .landing-copy { max-width: 42rem; margin: 1.7rem auto 0; color: var(--ink-muted); font-size: 1.05rem; line-height: 1.8; }
+  .landing-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 2.25rem; }.landing-actions a { min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; border-radius: .7rem; padding: .6rem 1.1rem; font-weight: 750; text-decoration: none; }
+  .landing-features { width: min(100% - 2rem, 75rem); display: grid; gap: 1rem; margin: 0 auto; padding: 4rem 0 5rem; }.landing-card { border: 1px solid var(--border); border-radius: 1.1rem; padding: 1.5rem; background: var(--surface); box-shadow: 0 .75rem 2rem rgb(61 78 128 / 7%); }.landing-icon { display: grid; width: 2.75rem; height: 2.75rem; place-items: center; border-radius: .75rem; color: var(--accent); background: #edf0ff; font-weight: 800; }.landing-card h2 { margin: 1rem 0 .55rem; font-size: 1.18rem; }.landing-card p { margin: 0; color: var(--ink-muted); line-height: 1.7; }
+  @keyframes star-drift { to { transform: translate3d(-2rem, 1rem, 0); } }
+  @media (min-width: 48rem) { .landing-features { grid-template-columns: repeat(3, 1fr); }.landing-card { padding: 1.75rem; } }
+  @media (max-width: 40rem) { .orbital-system { right: -17rem; bottom: -11rem; opacity: .4; }.nebula { width: 32rem; } }
+  @media (prefers-reduced-motion: reduce) { .starfield::before { animation: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+  <section class="landing-hero">
+    <div class="starfield" aria-hidden="true"></div><div class="nebula nebula-one" aria-hidden="true"></div><div class="nebula nebula-two" aria-hidden="true"></div>
+    <div class="orbital-system" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="planet planet-primary"></span><span class="planet planet-secondary"></span></div>
+    <div class="landing-wrap">
+      <p class="landing-kicker">MULTI-AGENT COLLABORATION</p>
+      <h1 class="landing-title">让多个 AI<br><span>真正协同工作</span></h1>
+      <p class="landing-copy">在一个统一工作台中协作处理任务，保留清晰的上下文与流式反馈，让不同智能体的观点更容易比较和整合。</p>
+      <div class="landing-actions"><a href="/chat" class="site-button-primary">立即体验</a><a href="/features" class="site-button-secondary">探索功能</a></div>
+    </div>
+  </section>
+  <section class="landing-features">
+    <article class="landing-card"><div class="landing-icon">✦</div><h2>多模型协作</h2><p>选择多个模型并行思考，从不同视角共同解决复杂问题。</p></article>
+    <article class="landing-card"><div class="landing-icon">→</div><h2>极速流式响应</h2><p>实时呈现模型输出，让思考过程和结果都更清晰可见。</p></article>
+    <article class="landing-card"><div class="landing-icon">◉</div><h2>独立记忆空间</h2><p>为用户、会话和智能体保留独立上下文，支持长期持续协作。</p></article>
+  </section>
+</main>
+{% endblock %}

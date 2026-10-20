@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}账户安全 | AI 协作工作台{% endblock %}
+
+{% block content %}
+<main class="light-page mx-auto w-full max-w-3xl px-4 py-12 sm:px-6">
+  <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8" aria-labelledby="account-security-title">
+    <p class="text-sm font-medium text-indigo-600">账户安全</p>
+    <h1 id="account-security-title" class="mt-2 text-3xl font-semibold text-slate-900">登录与绑定状态</h1>
+    <p class="mt-3 text-slate-600">此页展示已验证的身份与绑定状态，并可安全绑定手机号。</p>
+
+    {% if message %}
+    <p class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ message }}</p>
+    {% endif %}
+    {% if error %}
+    <p class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <dl class="mt-8 space-y-4">
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <dt class="font-medium text-emerald-800">邮箱已验证</dt>
+        <dd class="mt-1 text-sm text-slate-600">{{ email[:1] }}***@{{ email.split('@', 1)[1] }}</dd>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <dt class="font-medium text-slate-900">手机号绑定</dt>
+        <dd class="mt-1 text-sm text-slate-600">
+          {% if phone_bound %}
+          已绑定：{{ phone_mask }}
+          {% elif pending_phone_mask %}
+          验证码已发送至：{{ pending_phone_mask }}
+          <form class="mt-4 space-y-3" method="post" action="{{ url_for('verify_phone_binding_code') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-slate-800" for="phone-binding-code">短信验证码</label>
+            <input class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" id="phone-binding-code" type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required>
+            <button class="min-h-11 w-full rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 focus:ring-offset-slate-50" type="submit">验证并绑定</button>
+          </form>
+          {% else %}
+          尚未绑定手机号。
+          <form class="mt-4 space-y-3" method="post" action="{{ url_for('send_phone_binding_code') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-slate-800" for="phone">手机号</label>
+            <input class="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" id="phone" type="tel" name="phone" autocomplete="tel" inputmode="numeric" required>
+            <button class="min-h-11 w-full rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-offset-2 focus:ring-offset-slate-50" type="submit">发送验证码</button>
+          </form>
+          {% endif %}
+        </dd>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <dt class="font-medium text-slate-900">微信绑定</dt>
+        <dd class="mt-1 text-sm text-slate-600">
+          {% if wechat_bound %}已绑定，但绑定管理功能暂未开放。{% else %}微信绑定暂未开放。{% endif %}
+        </dd>
+      </div>
+    </dl>
+    <p class="mt-6 text-sm text-slate-500">本版本不提供手机号或微信登录。</p>
+  </section>
+</main>
+{% endblock %}

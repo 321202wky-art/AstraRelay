@@ -1,120 +1,128 @@
-# AstraRelay：共享上下文与服务边界
+# AstraRelay：完整源码、共享上下文与服务边界
 
-本文是 [项目 README](../README.md) 的深入补充，区分可运行的上下文摘录、私有宿主责任和未来设计。公开源文件只有 [collaboration_context.py](../collaboration_context.py) 与[对应测试](../tests/test_collaboration_context.py)，本文中的 Protocol/DTO 是接口说明，不是新增的生产业务实现。
+本文补充 [README](../README.md)。本仓库是完整脱敏开发源码，不是上下文摘录；业务、数据库、网页、桌面和测试均保留。私有接入标识已通用化，运行配置/数据及内部维护记录不发布。下文区分当前代码、宿主责任与未来方向，不将接口存在等同于业务集成完成。
 
-## 当前样例的执行流
+## 完整源码布局
 
-```mermaid
-sequenceDiagram
-    actor User as 用户
-    participant Host as 宿主服务（未公开）
-    participant Ledger as 会话账本（未公开）
-    participant Context as CollaborationContextService
-    participant Gateway as Adapter Gateway（未公开）
-    User->>Host: 消息、显式选择模型与上下文模式
-    Host->>Host: 身份 / 会话归属 / 请求 / 能力校验
-    Host->>Ledger: 持久化用户事件并确定本次快照
-    Host->>Context: build(conversation_id, model_id, mode, message_ids)
-    Context->>Ledger: get_shared_messages(conversation_id, limit=None)
-    Ledger-->>Context: 有序消息序列
-    Context-->>Host: [] 或一条 system 上下文消息
-    Host->>Gateway: 当前消息 + 已选历史 + 模型标识
-    Gateway-->>Host: 模型结果 / 错误
-    Host->>Ledger: 保存回复 / 请求状态
-    Host->>Context: 成功策略满足后 mark_synced(...)
-    Context->>Ledger: mark_model_context_synced(...)
-    Host-->>User: 结果呈现（可通过 SSE）
+| 层 | 实际模块 | 边界 |
+| --- | --- | --- |
+| Web 宿主 | [app.py](../app.py)、[auth.py](../auth.py)、[admin_authorization.py](../admin_authorization.py)、`templates/`、`static/` | 路由、会话、CSRF、归属校验、公开响应 |
+| 协作执行 | [broadcast.py](../broadcast.py)、[workspace_stream_service.py](../workspace_stream_service.py) | 旧提及解析、选中模型、上下文、流式事件与持久化 |
+| 上下文 | [collaboration_context.py](../collaboration_context.py)、[memory_manager.py](../memory_manager.py) | 共享选择器与历史摘要基础，不是自治 Memory |
+| 接入与目录 | [ai_adapter.py](../ai_adapter.py)、[model_registry.py](../model_registry.py)、[model_catalog.py](../model_catalog.py)、[catalog_refresh.py](../catalog_refresh.py) | 适配、可调用模型解析、缓存、刷新/降级 |
+| 公共投影 | [public_model_directory.py](../public_model_directory.py)、[model_capabilities.py](../model_capabilities.py) | 公共名称、能力分类，信息收录与调用资格分离 |
+| 文件与媒体 | [attachment_service.py](../attachment_service.py)、[media_service.py](../media_service.py) | 附件提取/归属与模型模态适配 |
+| 数据与账户 | [database.py](../database.py)、[user_database.py](../user_database.py)、[email_auth.py](../email_auth.py)、[sms_auth.py](../sms_auth.py) | 共享账本/兼容存储、账户、邮件恢复、可选短信 |
+| 开发期商业基础 | [billing_gateway.py](../billing_gateway.py)、[payment_service.py](../payment_service.py)、[payments/providers.py](../payments/providers.py) | 预冻结、结算/回滚、支付适配与本地模拟，非公众支付 |
+| 独立 Memory | [memory/models.py](../memory/models.py)、[memory/access.py](../memory/access.py)、[memory/repository.py](../memory/repository.py)、[memory/mysql_repository.py](../memory/mysql_repository.py)、[memory/migrations.py](../memory/migrations.py)、[memory/vector.py](../memory/vector.py) | 类型、范围、仓储、迁移和向量边界，尚无 Director/Agent/聊天业务闭环 |
+| 桌面边界 | [desktop/src/main.cjs](../desktop/src/main.cjs)、[desktop/src/preload.cjs](../desktop/src/preload.cjs)、[desktop/src/cloud-session.cjs](../desktop/src/cloud-session.cjs)、[desktop/src/project-service.cjs](../desktop/src/project-service.cjs) | 主进程受控云端/项目能力与渲染隔离 |
+
+`memory/` 是产品源代码，`data/` 是排除的运行数据。旧表和兼容模型存储不意味着恢复独立人格；工作台方向仍是同一共享账本。四个历史源文件 `ai_adapter_old.py`、`browser_controller.py`、`database_old.py`、`main_old.py` 也保留，但当前运行时不导入；旧适配器有原有语法缺陷，不能当作有效入口或功能保证。
+
+## 当前请求链路
+
+```text
+用户 / 桌面主进程
+  → Flask 身份、CSRF、会话归属、输入与模型能力检查
+  → 会话账本与当前请求状态
+  → CollaborationContextService：选择共同历史
+  → AIAdapter：服务端模型请求（可带开发计费网关）
+  → 回复保存 / 同步确认 / SSE 安全呈现
+  → 用户审阅与下一步选择
 ```
 
-图中只有 Context 的筛选、格式化和同步委托是公开代码。事件持久化时机、快照一致性、模型请求、SSE 与事务状态由宿主负责；图示是集成职责描述，不证明所有阶段已具备原子事务。`from_now` 在读取账本之前直接返回空上下文。
+这是职责顺序概览，不承诺所有入口共享同一跨系统事务。`create_app` 默认创建真实 `Database` / `UserDatabase`、初始化库表、建立适配与业务服务，并启动目录刷新和健康检查线程；测试可注入依赖，`public_demo.py` 是附加隔离预览，正常路径未替换为 mock。
+
+普通登录、找回与注册依赖账户/邮件流程；管理员能力单独校验。新增模型通过可调用目录与能力检查，再使用当前共享快照。SSE 中断与任务失败不是同一状态；请求成功、落库、游标和结算应分别检查，UI 完成动画不是事务证据。
 
 ## 数据与归属契约
 
-### 注入的数据库 Protocol
-
-公开类依赖以下鸭子类型接口，不依赖具体数据库驱动：
+共享上下文工具依赖两个注入接口：
 
 ```python
-# 说明性接口；不是仓库新增的可执行 Protocol 类。
 get_shared_messages(conversation_id, limit=None) -> list[dict]
 mark_model_context_synced(conversation_id, model_id, message_id) -> None
 ```
 
-`get_shared_messages` 应返回该会话中按时间/事件顺序排列的消息。`limit=None` 在当前样例中意味着读取全部记录。算法保留输入顺序，不自行排序；若宿主返回乱序记录，“最近 N 条”的含义就不可靠。
+数据库应返回按事件顺序排列且只属于已授权会话的记录。上下文工具不排序，没有当前用户参数，不负责登录、CSRF 或所有权；不能将客户端会话 ID 当作授权。`custom` 只在返回历史内筛选，仍依赖宿主先完成归属校验。未来租户隔离须同时落实读取、写入与索引边界，多用户不等于多租户。
 
-宿主必须先完成身份认证与会话所有权检查，并在存储查询中约束会话归属。将来多租户还必须同时绑定租户和用户授权范围。工具没有当前用户参数，没有鉴权上下文，不能单独承担这些检查，也不能防止使用他人的会话 ID。`custom` 仅在返回的当前会话消息内选 ID，但前提仍是数据库只返回已授权记录。
-
-### 消息 DTO
-
-| 字段 | 当前用途 | 宿主应保证的前置条件 |
+| 字段 | 当前用途 | 前置条件/风险 |
 | --- | --- | --- |
-| `id` | `smart` 与 `custom` 的选择集合、同步位置 | 会话内稳定、唯一、可哈希；缺失或重复会使选择扩大或混淆 |
-| `role` | 判断是否标注为“用户” | 使用约定角色；当前格式化器仅专门区分 `user` |
-| `content` | 拼接为上下文文本 | 应校验类型和长度，避免把敏感数据和不必要附件原文直接拼入 |
-| `model` | 显示说话者名称 | 已知别名用公共名称；未知值会原样回退，不能传入私有接入标识 |
-| `message_type` | 等于 `summary` 时视为已有摘要 | 摘要由宿主产生并治理；样例不检验其正确性、来源或时效 |
+| `id` | 选择集合和同步位置 | 稳定、唯一、可哈希；缺失/重复可能扩大选择 |
+| `role` | 区分用户说话者 | 当前只专门区分 `user` |
+| `content` | 拼接文本 | 宿主校验类型、长度与敏感范围 |
+| `model` | 模型说话者标签 | 已知别名用公共名，未知原值回退不等于安全公开投影 |
+| `message_type` | `summary` 为已有摘要 | 不检验摘要真实性、来源、时效 |
 
-输出 DTO 为 `[]`，或只有一个元素的 `[{"role": "system", "content": "当前协作上下文：\\n..."}]`。它不是模型响应，不携带 token 数量、成本、租户信息、版本或请求状态。调用方需要自行组装当前请求，避免重复加入已在账本中的同一用户消息。
+输出为空列表，或 `[{"role": "system", "content": "当前协作上下文：…"}]`，不携带 token、成本、版本或授权信息。宿主应避免把同一用户消息重复加入历史和当前请求。
 
-`history_limit` 默认 24，当前构造器不做参数校验。正整数是预期用法，但 `0` 在 Python 切片 `[-0:]` 中实际会保留全部非摘要消息，负数也有切片语义；不能把它们当成安全限额。宿主应校验配置，后续若改变工具行为应先补边界回归测试。
+## 当前上下文算法与限制
 
-## 四种选择与中途加入
+默认 `history_limit=24`。`smart` 收集所有 `summary`，再取最后 N 条非摘要消息，合并 ID 后按原顺序输出；`full` 不筛选；`custom` 按 ID 选择；`from_now` 直接返回 `[]`，不查询历史，不保存时间游标。未知 mode 抛出 `ValueError`，空历史/无匹配不伪造摘要。
 
-`smart` 先收集所有摘要，再取最后 N 条非摘要消息，将两者的 ID 合并成集合，最后遍历原历史，按原顺序保留匹配记录。它不会改写原始账本，不调用摘要模型，也不限制摘要数量、总字符数或 token 总量。时间复杂度为 O(n)，所读历史与选择集合也需要 O(n) 级空间；最终拼接还取决于内容总长度。
+目标 `model_id` 不参与历史筛选，新加入者能看到其他参与模型的记录。`mark_synced` 只是委托数据库，不按游标增量构造，不证明理解，不提供幂等或自动重试。
 
-`full` 不筛选；`custom` 按传入 ID 集合筛选；`from_now` 不读取历史且不建立持久起点。无历史、无自定义匹配记录时返回空列表，不生成假摘要。非法 mode 抛出 `ValueError`。
+算法读取全量历史，选择处理为 O(n)，内存和格式化成本还取决于内容长度。它不执行 tokenizer，不生成摘要，不提供严格 token 上限；全部摘要会持续增长，单条也可很长。构造器不校验 `history_limit`：0 的 `[-0:]` 实际保留全部，负数按 Python 切片处理，不能当作安全限额。后续需补边界测试，再引入摘要生命周期、窗口查询与信息丢失提示。
 
-新的参与模型调用同一 `build`，会收到当前模式选出的共同历史，而不是只看到自己的输出；`model_id` 不参与历史筛选。同步确认是另一条独立接口：`mark_synced` 只把三个参数转交数据库。它不按游标增量读取，不负责已读状态判断，更不证明远端模型理解了历史。
+历史拼为 system 消息便于兼容，也可能提升不可信内容的指令地位。说话者标签不是可信级别。应评估角色结构、引用边界、来源/版本和提示注入测试；多模型一致不等于独立证据。摘要不是脱敏器，token 截断不是隐私控制。
 
 ## Adapter Gateway 兼容契约
 
-私有项目保留接口：
-
 ```python
 AIAdapter.reply_with_history(message, history, model="deepseek")
-# 返回：纯文本 str
+# 返回纯文本 str
 ```
 
-该接口和纯文本结果是旧调用方兼容边界。默认模型值不改变“新会话无默认选择”的产品规则：交互层必须在发送前要求用户明确选模型。现有兼容提及解析和模型集合生成也不应借接口文档整理而改变。
+这是实际代码接口，不只是未来设计。默认值兼容旧调用方，交互新会话仍无预选模型。`BroadcastService` 提及解析与 `selected_models` 生成保持旧契约。
 
-网关输入的 `history` 应来自宿主批准的上下文，模型标识应经过可调用目录和能力校验；连接配置与凭据只从服务端环境获取。网关应隐藏传输差异，提供安全错误分类，不把原始异常、请求提示词或凭据带入公开响应。
+传入历史须经宿主批准，模型须可调用且能力匹配。服务端环境保存连接和凭据，公共元数据只投影公共名。流式事件、使用量、结构化错误是另一契约，不能悄悄将旧字符串改为对象或迭代器。通用渠道配置不意味着自动成本最优路由已经实现。
 
-公开工具不实现此网关，也不导入其客户端。未来需要流式事件、使用量、结构化结果时，可以设计独立的新契约或兼容包装层，而不悄悄把旧接口返回值从字符串改成迭代器或对象。SSE 转发层负责事件类型和内容边界；纯文本旧接口与流式能力不是一回事。
+## 配置变量与启动行为
 
-## 校验、失败与恢复责任
+[config.py](../config.py) 读取进程环境，不自动加载 `.env`。全空 [.env.example](../.env.example) 是名称清单，不能整体导入。未设置与设为空不同：整数空值解析失败，布尔空值为 false，字符串空值可能覆盖默认值。真实值仅在私有启动环境提供，不提交或打印。`DATABASE_URL` **未来专用、当前未实现**；MySQL 只使用显式变量。
 
-| 情况 | 样例当前表现 | 宿主的处理责任 |
-| --- | --- | --- |
-| 不支持的 context mode | `ValueError` | 校验请求并返回安全错误，不泄露堆栈 |
-| 空历史 / 自定义 ID 无匹配 | 返回 `[]` | 明确说明本次共享范围，不伪造前情 |
-| 账本读取或同步写入失败 | 异常直接向调用方传播 | 安全分类、状态记录、适当重试，不吞错为成功 |
-| 模型超时、能力不符或不可调用 | 不在工具职责内 | 提示限制或兼容模型；明确失败状态与重试权限 |
-| SSE 中断 / 用户关闭页面 | 不在工具职责内 | 区分传输中断与任务终态，避免重复保存/调用/计费 |
-| 请求期间又有新消息 | 无快照版本或锁 | 明确事件上界和一致性策略，不能假设每次读取相同 |
-| 同步确认重复 / 乱序 | 原样委托 | 定义单调推进、幂等请求 ID、事务与补偿边界 |
+| 名称 | 支持范围与默认行为 |
+| --- | --- |
+| `MODEL_GATEWAY_BASE_URL`, `MODEL_GATEWAY_API_KEY` | 主渠道地址/凭据，默认空；无实际内置端点 |
+| `GATEWAY_COMPAT_BASE_URL`, `GATEWAY_COMPAT_API_KEY`, `GATEWAY_COMPAT_API_KEYS` | 兼容渠道与逗号分隔 key pool；未设置 pool 时回退单 key |
+| `GATEWAY_SECONDARY_BASE_URL`, `GATEWAY_SECONDARY_API_KEY`, `GATEWAY_SECONDARY_API_KEYS`, `GATEWAY_SECONDARY_CATALOG_URL` | 次渠道连接、独立 pool 与目录 URL，默认空 |
+| `DEFAULT_MODEL_RUNTIME`, `USE_LEGACY_API` | 主 key 存在时运行时默认 `gateway_main`，否则 `legacy`；后者默认 false，不表示打开即可调用 |
+| `MODEL_CATALOG_CACHE_PATH` | 默认 `data/model_catalog.json`，缓存不附带，启动可刷新 |
+| `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD` | 默认 localhost/3306/root/空；隔离开发应使用专用用户，不能依赖 root 空口令 |
+| `MYSQL_DATABASE`, `USER_DATABASE` | 默认 `chat_db` / `user_db`；普通服务初始化聊天/账户库，保留固定分组/模型库与兼容迁移 |
+| `MEMORY_DATABASE` | 默认 `memory_db`，独立迁移/仓储配置；普通 `create_app` 不初始化它 |
+| `FLASK_SECRET_KEY` | 无可用默认值，至少 32 字符；认证初始化拒绝不合格配置 |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`, `SMTP_USE_TLS` | 注册/恢复；端口默认 587、TLS 默认 true，发件人默认回退用户名；未完整配置则不可用 |
+| `EMAIL_CODE_PEPPER` | 独立至少 32 字符高熵值，拒绝明显占位或低复杂度重复值 |
+| `SMS_AUTH_ENABLED`, `ALIBABA_CLOUD_ACCESS_KEY_ID`, `ALIBABA_CLOUD_ACCESS_KEY_SECRET`, `ALIYUN_SMS_SIGN_NAME`, `ALIYUN_SMS_BIND_TEMPLATE_CODE` | 可选短信，开关默认 false；须完整授权配置，模板默认常量不等于可用服务 |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | 可选管理员引导，默认空；会创建/提升管理员，普通试运行不设置；Windows bootstrap 可能持久化会话密钥 |
+| `ENABLE_MOCK_PAYMENTS`, `MOCK_PAYMENT_CALLBACK_TOKEN` | 本地模拟开关/回调令牌，默认禁用；非真实支付开关 |
+| `MODEL_PRICES_MICRO_POINTS`, `EXCHANGE_RATE` | 前者为逗号分隔 `model=正整数` 开发价格，空表不启用正常适配器的计费网关；后者默认 100，不是运营许可 |
+| `TOKEN_CHARS_PER_TOKEN`, `MAX_OUTPUT_TOKENS`, `MAX_IMAGE_UPLOAD_BYTES` | 默认 4、1024、5 MiB；字符估算不是实际 tokenizer/计费 |
+| `HOST`, `FLASK_DEBUG` | 默认回环与 debug=false；端口代码固定 5000，无 `PORT` 环境覆盖 |
+| `DATABASE_URL` | 仅未来发布侧契约，不被当前连接代码读取，不能代替 `MYSQL_*` |
 
-发布的三项测试只验证正常选择与委托，未覆盖表中所有异常。未来测试应加入空历史、非法模式、重复/缺失 ID、超长文本、摘要膨胀、数据库异常与并发快照；这些是改进清单，不是已实现的可靠性保证。
+`GROUP_CHAT_DATABASE` 和各历史模型库名是代码常量，不支持同名环境覆盖。正常启动要求专用 MySQL 用户在独立开发实例上具备建库、表迁移及读写权限。启动会写数据/迁移，配置网关后可能发起后台请求，不能指向业务库。SMTP 未配置时页面可呈现，但注册/找回不可用，预览不会绕过。
 
-## 上下文不是授权
+独立 Memory 通过 `MemoryDatabase.initialize()` 显式迁移，使用版本表和数据库锁；它是底层能力，不是自动聊天集成。真实 MySQL 验证由 [tests/run_memory_mysql_integration.ps1](../tests/run_memory_mysql_integration.ps1) 管理隔离容器与 opt-in，默认 Python 测试不运行真实实例。
 
-说话者标签提供来源线索，但内容仍可能带有提示注入、错误结论或过时约束。当前把全部历史放在一条 system 消息中的做法，可能模糊“用户数据”与“系统指令”的边界。集成时需考虑角色保持、引用分隔、来源追踪和不可信内容测试；不能把历史中的“请执行命令”直接变成工具权限。
+## 桌面信任边界
 
-共享记录也不应天然包含所有信息。账户资料、其他租户消息、凭据、支付信息和无关附件必须留在授权范围之外。摘要不是脱敏器，截断也不是隐私控制。访问审计应记录必要的安全元数据，而不是原样记录提示词和秘密。
+主进程管理 allowlist 云端操作、cookies、CSRF 与事件投影；渲染层 sandbox/contextIsolation 开启、Node 关闭，不拿服务端凭据。`ASTRARELAY_BASE_URL` 是桌面进程变量；打包态显式配置的云端地址要求 HTTPS，未配置仍回退本地回环地址，不代表正式分发配置；开发允许回环 HTTP。项目模块只操作用户选定根目录，限制路径、受保护文件、类型/大小；编辑保存不是任意文件访问许可。
 
-桌面主进程与渲染层、服务器与模型连接分别构成不同信任边界。本地项目权限不等于 Shell、Git 推送或发布授权；任何未来 Agent 都必须遵守用户选择的授权范围，支持审阅与取消，不因“完成任务”自动扩大权限。
+Terminal、Patch、Git、Skills、Full Access 与 Offline 状态不代表已启用执行。安排视图也不是后端持久化自治调度系统。自动测试与历史本地打包不替代登录、会话过期、项目、签名更新等人工验收。依赖风险见 [SECURITY.md](../SECURITY.md)。
 
-## 演进职责与人类控制
+## 失败模式、验证与演进
 
-以下是 AI Team OS 的职责方向，不是当前已集成的独立服务：
+| 情况 | 当前边界 / 后续责任 |
+| --- | --- |
+| 账本读取/同步写入异常 | 工具直接传播，宿主安全分类，不吞错为成功 |
+| 模型不可用、超时、能力不符 | 解释限制并安全失败，不能以目录存在判定成功 |
+| SSE 断线/重试 | 区分传输与任务状态，避免重复保存/调用/计费，不假设跨系统恰好一次 |
+| 请求期间新消息 | 工具无快照版本/锁，应明确事件上界与一致性 |
+| 摘要增长、重复/缺失 ID、超长文本 | 当前不保证严格预算，需增强边界与质量评估 |
+| 私有文件、其他用户/租户数据 | 数据出入口必须授权/过滤/脱敏，不能交给模型自觉 |
 
-| 组件 | 应负责 | 不应隐含获得的权限 |
-| --- | --- | --- |
-| Director | 理解目标、提出计划与分工、建议上下文、整合结果 | 自动批准敏感动作、绕过用户选择 |
-| Agent | 在有界任务与工具许可内执行、报告结果与失败 | 任意读取项目/账户资料、无限重试或自主发布 |
-| Memory | 信息来源、版本、保留/删除、授权范围和质量治理 | 将所有历史永久共享给所有任务或租户 |
-| Model Router | 能力、成本、可用性与策略匹配 | 绕过预算或把未知模型当作具备任意模态能力 |
-| 宿主服务与用户 | 身份、授权、预算、审计、批准与取消 | 不能把责任转交给模型文本或 UI 展示状态 |
+完整 Python、网页 JS、桌面测试随仓库提供，[README](../README.md) 列出命令。多使用合成数据库/客户端，验证局部行为而非真实云端可用性；上下文三项局部测试并非整个项目测试范围。
 
-先建设可观察、可解释的请求状态，再逐项引入自动编排。结果正确性需要证据与复核，多模型交叉回答不保证独立，也不自动形成事实共识。未来 SaaS 还须独立验证租户隔离、配额、审计、数据生命周期和部署安全，不能用已有账户系统或开发期支付模拟代替。
-
-回到 [README](../README.md) 查看项目背景、样例运行方式与公开同步政策。
+未来 AI Team OS 应分离职责：Director 提出计划与分工；Agent 在批准工具范围内执行；Memory 治理来源、版本、范围、保留/删除与质量；Model Router 匹配能力、成本和可用性。用户与宿主负责身份、预算、批准、取消与审计。未来业务集成尚未完成，现有 Memory/向量接口没有赋予模型高权限。

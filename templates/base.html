@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AI 协作工作台{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="site-shell">
+  <header class="site-header">
+    <nav class="site-nav" aria-label="主导航">
+      <a href="/" class="site-brand">
+        <span class="site-mark">AI</span>
+        <span>协作工作台</span>
+      </a>
+      <div class="site-nav-links">
+        <a href="/">首页</a>
+        <a href="/chat">聊天</a>
+        <a href="/model-plaza">模型广场</a>
+      </div>
+      <div class="site-actions">
+        {% if session.get('username') %}
+          <span class="site-user">{{ session.get('username') }}</span>
+          {% if session.get('email') and not session.get('is_admin') %}
+            <a href="{{ url_for('account_security') }}">账户安全</a>
+          {% endif %}
+          <a href="/chat" class="site-button-primary">进入工作台</a>
+          <form class="logout-form" action="{{ url_for('logout') }}" method="post">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="logout-button">退出</button>
+          </form>
+        {% else %}
+          <a href="/login">登录</a>
+          <a href="/register" class="site-button-primary">注册</a>
+        {% endif %}
+      </div>
+    </nav>
+  </header>
+  <div class="site-main">{% block content %}{% endblock %}</div>
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>© 2026 AI 协作工作台。让多个智能体真正协同工作。</p>
+      <div class="site-footer-links"><a href="/">首页</a><a href="/model-plaza">模型广场</a></div>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

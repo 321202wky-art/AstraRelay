@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}模型广场｜AI 协作工作台{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='model-plaza.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="plaza-shell">
+  <section class="plaza-hero" aria-labelledby="plaza-title">
+    <p class="plaza-kicker">官方模型目录</p>
+    <h1 id="plaza-title">模型广场</h1>
+    <p>在工作台中选择经过验证的模型协同完成任务。目录仅展示适合任务选择的公开信息。</p>
+    <a class="plaza-primary" href="{{ url_for('workspace') }}">进入协作工作台</a>
+  </section>
+  <section id="plaza-directory-status" class="plaza-directory-status" aria-live="polite" hidden>
+    <strong id="plaza-directory-message"></strong>
+    <p id="plaza-directory-detail"></p>
+    <button id="plaza-directory-retry" type="button" hidden>重新加载目录</button>
+  </section>
+  <section class="plaza-toolbar" aria-label="模型筛选">
+    <label for="plaza-search">搜索模型</label>
+    <input id="plaza-search" type="search" placeholder="按模型名称搜索" autocomplete="off">
+    <p id="plaza-status" role="status" aria-live="polite">正在加载官方模型目录…</p>
+  </section>
+  <section id="plaza-grid" class="plaza-grid" aria-live="polite" aria-label="可用模型"></section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='model-plaza.js') }}"></script>
+{% endblock %}

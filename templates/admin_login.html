@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>管理员登录 | AI 群聊记忆系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body class="light-page">
+  <div class="login-glow login-glow-primary" aria-hidden="true"></div>
+  <div class="login-glow login-glow-secondary" aria-hidden="true"></div>
+  <main class="login-shell">
+    <section class="login-card" aria-labelledby="admin-login-title">
+      <div class="login-brand" aria-label="AI 群聊记忆系统">
+        <span class="brand-mark" aria-hidden="true">AI</span>
+        <span>AI 群聊记忆系统</span>
+      </div>
+      <header>
+        <p class="login-kicker">管理中心</p>
+        <h1 id="admin-login-title">管理员登录</h1>
+        <p class="login-copy">验证管理员身份后管理系统账户。</p>
+      </header>
+
+      {% if error %}
+      <p class="login-alert" role="alert">{{ error }}</p>
+      {% endif %}
+
+      <form class="login-form" method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="form-field">
+          <label for="username">管理员用户名</label>
+          <input id="username" name="username" autocomplete="username" required>
+        </div>
+        <div class="form-field">
+          <label for="password">密码</label>
+          <input id="password" type="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit">进入管理界面</button>
+      </form>
+      <p class="auth-switch">使用普通账号？<a href="{{ url_for('login') }}">返回用户登录</a></p>
+    </section>
+  </main>
+</body>
+</html>

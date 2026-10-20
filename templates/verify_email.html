@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>验证邮箱 | AI 群聊记忆系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body class="light-page">
+  <main class="login-shell">
+    <div class="auth-layout">
+      <section class="auth-showcase" aria-label="平台介绍">
+        <div class="auth-stars" aria-hidden="true"></div>
+        <div class="auth-nebula" aria-hidden="true"></div>
+        <div class="auth-showcase-content">
+          <a class="showcase-brand" href="/" aria-label="返回首页"><span class="showcase-mark" aria-hidden="true">N</span>NOVA WORKSPACE</a>
+          <div class="showcase-copy">
+            <p class="login-kicker">智能协作中心</p>
+            <h2>确认你的<br>协作空间。</h2>
+            <p>输入发送至邮箱的六码验证码，即可完成账号激活并进入工作台。</p>
+          </div>
+          <div class="showcase-stats" aria-label="平台能力">
+            <span><strong>安全</strong>邮箱激活</span>
+            <span><strong>实时</strong>流式响应</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-card" aria-labelledby="verify-email-title">
+        <div class="login-brand" aria-label="AI 群聊记忆系统">
+          <span class="brand-mark" aria-hidden="true">AI</span>
+          <span>AI 群聊记忆系统</span>
+        </div>
+        <header>
+          <p class="login-kicker">邮箱验证</p>
+          <h1 id="verify-email-title">激活账号</h1>
+          <p class="login-copy">验证码已发送至 {{ email }}</p>
+        </header>
+
+        {% if error %}
+        <p class="login-alert" role="alert">{{ error }}</p>
+        {% endif %}
+
+        <form class="login-form" method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <div class="form-field">
+            <label for="code">六码验证码</label>
+            <input class="verification-code" id="code" type="text" name="code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required>
+          </div>
+          <button type="submit">验证并进入工作台</button>
+        </form>
+        <p class="auth-switch">邮箱填写有误？<a href="{{ url_for('register') }}">重新注册</a></p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

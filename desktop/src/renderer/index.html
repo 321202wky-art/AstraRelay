@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    >
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AstraRelay 工作台</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="vendor/editor.bundle.js" defer></script>
+    <script src="project-tabs.js" defer></script>
+    <script src="schedule-store.js" defer></script>
+    <script src="view-state.js" defer></script>
+    <script src="conversation-operations.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell" id="app-shell">
+      <aside class="global-sidebar" id="global-sidebar" aria-label="全局导航" aria-hidden="true" inert>
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">AR</div>
+          <div class="brand-copy">
+            <strong>AstraRelay</strong>
+            <span>桌面工作台</span>
+          </div>
+          <button class="icon-button sidebar-close" id="sidebar-close" type="button" aria-label="关闭导航">×</button>
+        </div>
+
+        <button class="new-task-button" id="new-task" type="button">
+          <span class="button-symbol" aria-hidden="true">＋</span>
+          <span>新任务</span>
+        </button>
+
+        <nav class="primary-nav" aria-label="工作台入口">
+          <button class="nav-item is-active" data-view="workspace" type="button">
+            <span class="nav-symbol" aria-hidden="true">⌁</span>
+            <span>工作台</span>
+          </button>
+          <button class="nav-item" data-view="search" type="button">
+            <span class="nav-symbol" aria-hidden="true">⌕</span>
+            <span>搜索</span>
+          </button>
+          <button class="nav-item" data-view="model-plaza" type="button">
+            <span class="nav-symbol" aria-hidden="true">◇</span>
+            <span>模型广场</span>
+          </button>
+          <button class="nav-item" data-view="schedule" type="button">
+            <span class="nav-symbol" aria-hidden="true">◷</span>
+            <span>已安排</span>
+          </button>
+        </nav>
+
+        <section class="sidebar-section" aria-labelledby="projects-heading">
+          <div class="section-heading" id="projects-heading">项目</div>
+          <button class="project-row" data-view="project" type="button">
+            <span class="folder-symbol" aria-hidden="true"></span>
+            <span class="truncate">本地项目视图</span>
+          </button>
+          <button class="project-row" id="project-open" type="button">
+            <span class="folder-symbol" aria-hidden="true"></span>
+            <span class="truncate">选择项目根目录</span>
+            <span class="row-note" id="project-open-status">未授权</span>
+          </button>
+          <p class="sidebar-passive-row" aria-disabled="true">插件 · 受控包</p>
+          <p class="sidebar-passive-row" aria-disabled="true">站点 · 受控包</p>
+          <p class="sidebar-passive-row" aria-disabled="true">拉取请求 · 受控包</p>
+        </section>
+
+        <section class="sidebar-section recent-section" aria-labelledby="recent-heading">
+          <div class="section-heading" id="recent-heading">最近</div>
+          <div class="conversation-list" id="conversation-list" aria-live="polite"></div>
+        </section>
+
+        <div class="account-card" id="account-card">
+          <div class="avatar" id="account-avatar" aria-hidden="true">A</div>
+          <div class="account-copy">
+            <strong id="account-name">正在连接</strong>
+            <span id="account-status">检查云端会话</span>
+          </div>
+          <button class="text-button compact" id="login-button" type="button" hidden>登录</button>
+        </div>
+      </aside>
+
+      <main class="workspace-main" id="workspace-main">
+        <header class="task-header" id="task-header">
+          <div class="header-leading">
+            <button class="icon-button sidebar-open" id="sidebar-open" type="button" aria-label="打开导航">☰</button>
+            <div class="breadcrumb-icon" aria-hidden="true"></div>
+            <div class="task-title-group">
+              <strong>AstraRelay 工作台</strong>
+              <span>Windows 安全桌面检查点</span>
+            </div>
+          </div>
+          <div class="header-actions">
+            <div class="connection-chip" id="connection-chip">
+              <span class="status-indicator" aria-hidden="true"></span>
+              <span id="connection-label">连接中</span>
+            </div>
+            <button class="toolbar-button inspector-open" id="inspector-open" type="button">环境信息</button>
+            <button class="toolbar-button" id="refresh-button" type="button">刷新</button>
+          </div>
+        </header>
+
+        <section class="surface-view is-active" id="workspace-view" aria-label="工作台视图">
+          <section class="task-surface" id="task-timeline" aria-live="polite">
+            <div class="timeline-inner">
+              <div class="task-intro">
+                <div class="intro-mark" aria-hidden="true">AR</div>
+                <div>
+                  <p class="eyebrow">DESKTOP WORKBENCH</p>
+                  <h1 id="timeline-title">正在连接 AstraRelay 云端</h1>
+                  <p id="timeline-summary">安全加载账户、会话和可用协作模型。凭据只保存在桌面主进程中。</p>
+                </div>
+              </div>
+
+              <div class="status-panel" id="status-panel">
+                <div class="panel-heading-row">
+                  <div>
+                    <span class="panel-kicker">启动检查</span>
+                    <h2 id="status-title">正在建立安全会话</h2>
+                  </div>
+                  <span class="phase-badge" id="phase-badge">连接中</span>
+                </div>
+                <p class="status-message" id="status-message">正在读取本地桌面边界并验证云端登录状态。</p>
+                <div class="status-actions">
+                  <button class="primary-button" id="primary-action" type="button" hidden>登录 AstraRelay</button>
+                  <button class="secondary-button" id="retry-button" type="button" hidden>重新连接</button>
+                </div>
+              </div>
+
+              <ol class="checkpoint-list" aria-label="桌面启动进度">
+                <li class="checkpoint" data-checkpoint="shell">
+                  <span class="checkpoint-marker" aria-hidden="true"></span>
+                  <div>
+                    <strong>安全桌面边界</strong>
+                    <p>本地页面运行在隔离沙箱中，不接触 Cookie 或 Node.js。</p>
+                  </div>
+                  <span class="checkpoint-state">已就绪</span>
+                </li>
+                <li class="checkpoint" data-checkpoint="session">
+                  <span class="checkpoint-marker" aria-hidden="true"></span>
+                  <div>
+                    <strong>云端账户</strong>
+                    <p id="session-checkpoint-copy">正在检查登录状态。</p>
+                  </div>
+                  <span class="checkpoint-state" id="session-checkpoint-state">检查中</span>
+                </li>
+                <li class="checkpoint" data-checkpoint="workspace">
+                  <span class="checkpoint-marker" aria-hidden="true"></span>
+                  <div>
+                    <strong>工作台数据</strong>
+                    <p id="workspace-checkpoint-copy">登录后加载最近会话和公开模型摘要。</p>
+                  </div>
+                  <span class="checkpoint-state" id="workspace-checkpoint-state">等待</span>
+                </li>
+              </ol>
+
+              <section class="next-stage-note" aria-labelledby="next-stage-title">
+                <span class="note-index" aria-hidden="true">NEXT</span>
+                <div>
+                  <h2 id="next-stage-title">从安全外壳进入真实任务</h2>
+                  <p>当前版本先验证登录、会话恢复和安装流程。项目读写、AI 补丁、PowerShell 与流式任务将在测试通过后逐步启用。</p>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="live-workspace" id="live-workspace" aria-label="云端会话工作区" hidden>
+            <div class="workspace-empty" id="workspace-empty">
+              <span class="workspace-empty-mark" aria-hidden="true">AR</span>
+              <h1>开始一个新对话</h1>
+              <p>选择一个协作模型，然后输入你的任务。会话与网页工作台实时使用同一份云端数据。</p>
+            </div>
+            <div class="workspace-thread" id="workspace-thread" hidden>
+              <div class="thread-heading">
+                <div>
+                  <span class="eyebrow">协作空间</span>
+                  <h1 id="workspace-title">新对话</h1>
+                </div>
+                <button class="thread-menu-button" id="conversation-menu" type="button" aria-label="会话菜单">•••</button>
+              </div>
+              <section class="selected-models-card" id="selected-models-card" aria-label="已选协作模型">
+                <span class="selected-models-label">已选协作模型</span>
+                <div class="selected-models-list" id="selected-models-list"></div>
+              </section>
+              <div class="workspace-transcript" id="workspace-transcript" aria-live="polite"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="surface-view" id="search-view" aria-label="搜索视图" hidden>
+          <div class="surface-panel">
+            <div class="surface-panel-heading">
+              <div>
+                <span class="panel-kicker">SEARCH</span>
+                <h1>搜索</h1>
+              </div>
+              <span class="mini-status is-muted">受限桥接</span>
+            </div>
+            <p>此视图保留给云端任务和本地项目文本搜索。当前任务先接入导航状态，不扩大任何渲染器权限。</p>
+            <form class="surface-form" id="search-form">
+              <label for="search-query">搜索关键词</label>
+              <div class="surface-inline-actions">
+                <input id="search-query" name="searchQuery" type="search" placeholder="输入关键词" autocomplete="off">
+                <button class="secondary-button" type="submit">搜索</button>
+              </div>
+            </form>
+            <p class="status-message" id="search-status">输入关键词后分组检索云端任务标题与已授权项目文本。</p>
+            <div class="search-groups">
+              <section class="search-group" aria-labelledby="search-conversations-heading">
+                <div class="surface-panel-heading search-group-heading">
+                  <h2 id="search-conversations-heading">云端任务</h2>
+                </div>
+                <div class="search-result-list" id="search-conversations" aria-live="polite"></div>
+              </section>
+              <section class="search-group" aria-labelledby="search-project-files-heading">
+                <div class="surface-panel-heading search-group-heading">
+                  <h2 id="search-project-files-heading">项目文件名</h2>
+                </div>
+                <div class="search-result-list" id="search-project-files" aria-live="polite"></div>
+              </section>
+              <section class="search-group" aria-labelledby="search-project-heading">
+                <div class="surface-panel-heading search-group-heading">
+                  <h2 id="search-project-heading">项目文本</h2>
+                </div>
+                <div class="search-result-list" id="search-project-text" aria-live="polite"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="surface-view" id="model-plaza-view" aria-label="模型广场视图" hidden>
+          <div class="surface-panel">
+            <div class="surface-panel-heading">
+              <div>
+                <span class="panel-kicker">MODEL PLAZA</span>
+                <h1>模型广场</h1>
+              </div>
+              <span class="mini-status is-muted">公开目录</span>
+            </div>
+            <p>此视图将承载公开模型目录与能力说明。当前任务只交付可靠导航，不修改现有模型同步边界。</p>
+            <p class="status-message" id="model-plaza-summary">等待云端目录加载完成。</p>
+            <div class="model-plaza-grid" id="model-plaza-list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="surface-view" id="schedule-view" aria-labelledby="schedule-summary" hidden>
+          <div class="surface-panel">
+            <div class="surface-panel-heading">
+              <div>
+                <span class="panel-kicker">LOCAL SCHEDULE</span>
+                <h1 id="schedule-summary">本地已安排任务</h1>
+              </div>
+              <span class="phase-badge">本地</span>
+            </div>
+            <p class="status-message">本阶段只加载纯本地内存状态模块；任务执行、云同步和系统集成将在后续任务中接入。</p>
+            <form class="surface-form" id="schedule-form">
+              <label for="schedule-title">计划标题</label>
+              <div class="surface-inline-actions">
+                <input id="schedule-title" name="scheduleTitle" type="text" maxlength="120" autocomplete="off" disabled>
+                <button class="secondary-button" type="submit">添加</button>
+              </div>
+            </form>
+            <ul id="schedule-list" aria-live="polite"></ul>
+          </div>
+        </section>
+
+        <section class="project-view surface-view" id="project-view" aria-label="本地项目工作区" hidden>
+          <aside class="project-browser" aria-label="项目文件">
+            <div class="project-browser-heading">
+              <div>
+                <span class="eyebrow">LOCAL PROJECT</span>
+                <h1 id="project-title">本地项目</h1>
+              </div>
+              <span class="mini-status is-muted" id="project-status">未授权</span>
+            </div>
+            <label class="project-search-label" for="project-search">搜索当前项目</label>
+            <input class="project-search" id="project-search" type="search" placeholder="输入文本后搜索" autocomplete="off" disabled>
+            <div class="project-tree" id="project-tree" aria-live="polite"></div>
+          </aside>
+
+          <section class="project-editor-pane" aria-label="项目编辑器">
+            <div class="project-tabs-row">
+              <div class="project-tabs" id="project-tabs" aria-label="打开的文件"></div>
+              <button class="secondary-button project-save" id="project-save" type="button" disabled>保存</button>
+            </div>
+            <div class="project-editor" id="project-editor" aria-live="polite">
+              <div class="project-empty-state">
+                <strong>选择项目文件开始编辑</strong>
+                <span>文件只会通过已授权项目桥接读取和显式保存。</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="desktop-composer" id="desktop-composer" aria-label="任务输入" hidden>
+          <form class="composer-shell" id="workspace-composer">
+            <textarea id="workspace-message" rows="2" placeholder="给 AstraRelay 发送消息" aria-label="消息"></textarea>
+            <div class="composer-toolbar">
+              <div class="composer-leading">
+                <button class="composer-tool" type="button" disabled aria-label="添加附件">＋</button>
+                <div class="model-summary-anchor">
+                  <span class="approval-mode" id="model-summary">未选择模型</span>
+                  <button class="model-summary-overflow" id="model-summary-overflow" type="button" aria-label="查看全部已选协作模型" aria-expanded="false" hidden>+0</button>
+                  <section class="model-summary-overflow-panel" id="model-summary-overflow-panel" aria-label="全部已选协作模型" hidden></section>
+                </div>
+                <span class="future-label">文件和本地项目将在后续阶段启用</span>
+              </div>
+              <div class="composer-trailing">
+                <button class="model-button" id="model-settings" type="button">选择协作模型</button>
+                <button class="send-button" id="workspace-send" type="submit" aria-label="发送任务">↑</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section class="model-popover" id="model-popover" aria-label="协作模型" hidden>
+          <div class="model-popover-heading"><strong>协作模型</strong><button class="icon-button" id="model-popover-close" type="button" aria-label="关闭模型选择">×</button></div>
+          <p>至少选择一个模型；设置会同步到云端会话。</p>
+          <div id="model-options" class="model-options"></div>
+        </section>
+      </main>
+
+      <div class="conversation-menu" id="conversation-menu-panel" hidden>
+        <button id="conversation-rename" type="button">重命名</button>
+        <button id="conversation-delete" type="button">删除对话</button>
+      </div>
+
+      <div
+        class="rename-conversation-dialog"
+        id="rename-conversation-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rename-conversation-title"
+        aria-describedby="rename-conversation-helper"
+        hidden
+      >
+        <form class="rename-conversation-card" id="rename-conversation-form" novalidate>
+          <div class="rename-conversation-heading">
+            <div>
+              <h2 id="rename-conversation-title">重命名聊天</h2>
+              <p id="rename-conversation-helper">输入一个便于识别的聊天名称。</p>
+            </div>
+            <button class="icon-button" id="rename-conversation-close" type="button" aria-label="关闭重命名聊天">×</button>
+          </div>
+          <label for="rename-conversation-input">聊天名称</label>
+          <input id="rename-conversation-input" name="conversationTitle" type="text" autocomplete="off" required>
+          <p class="rename-conversation-error" id="rename-conversation-error" role="alert" hidden></p>
+          <div class="rename-conversation-actions">
+            <button class="secondary-button" id="rename-conversation-cancel" type="button">取消</button>
+            <button class="primary-button" id="rename-conversation-save" type="submit">保存</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="environment-inspector" id="environment-inspector" aria-label="环境信息" aria-hidden="true" inert>
+        <div class="inspector-heading">
+          <div>
+            <span>环境信息</span>
+            <strong>桌面检查点</strong>
+          </div>
+          <button class="icon-button inspector-close" id="inspector-close" type="button" aria-label="关闭环境信息">×</button>
+        </div>
+
+        <div class="inspector-card-grid">
+          <section class="inspector-card">
+            <div class="inspector-card-heading">
+              <span>当前视图</span>
+              <span class="mini-status is-muted">导航</span>
+            </div>
+            <strong id="inspector-view-summary">工作台</strong>
+            <p id="inspector-view-detail">云端会话与桌面启动状态</p>
+          </section>
+
+          <section class="inspector-card">
+            <div class="inspector-card-heading">
+              <span>云端</span>
+              <span class="mini-status" id="cloud-mini-status">连接中</span>
+            </div>
+            <strong id="inspector-cloud-summary">正在建立安全会话</strong>
+            <dl class="detail-list">
+              <div><dt>账户</dt><dd id="environment-account">待确认</dd></div>
+              <div><dt>会话</dt><dd id="environment-conversations">待加载</dd></div>
+              <div><dt>协作模型</dt><dd id="environment-models">待加载</dd></div>
+              <div><dt>上下文</dt><dd>智能摘要</dd></div>
+            </dl>
+          </section>
+
+          <section class="inspector-card">
+            <div class="inspector-card-heading">
+              <span>本地项目</span>
+              <span class="mini-status is-muted" id="project-mini-status">未授权</span>
+            </div>
+            <strong id="inspector-project-summary">未选择本地项目</strong>
+            <p class="project-inspector-note" id="project-inspector-copy">选择本地项目后启用受限目录树与显式保存。</p>
+            <p class="project-inspector-note" id="inspector-project-changes">本地修改的已打开文件：0</p>
+            <p class="project-inspector-note" id="inspector-project-active-tab">活动编辑器：未打开编辑文件</p>
+          </section>
+
+          <section class="inspector-card">
+            <div class="inspector-card-heading">
+              <span>已安排</span>
+              <span class="mini-status is-muted">本地</span>
+            </div>
+            <strong id="inspector-schedule-summary">待办 0 · 已完成 0</strong>
+            <p id="inspector-schedule-detail">当前没有本地排队任务。</p>
+          </section>
+        </div>
+
+        <section class="inspector-section inspector-services">
+          <div class="inspector-section-title">
+            <span>受控包状态</span>
+            <span class="mini-status is-muted">只读</span>
+          </div>
+          <ul class="service-status-list" aria-label="后续受控包状态">
+            <li><span>Patch</span><strong>后续受控包</strong></li>
+            <li><span>Terminal</span><strong>后续受控包</strong></li>
+            <li><span>Skills</span><strong>后续受控包</strong></li>
+            <li><span>Git</span><strong>后续受控包</strong></li>
+            <li><span>Full Access</span><strong>后续受控包</strong></li>
+            <li><span>Offline</span><strong>后续阶段</strong></li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+    <button class="scrim" id="scrim" type="button" aria-label="关闭侧栏" tabindex="-1"></button>
+  </body>
+</html>

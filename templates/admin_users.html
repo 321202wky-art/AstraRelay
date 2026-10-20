@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>账户管理 | AI 群聊记忆系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+</head>
+<body class="light-page">
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <p class="admin-kicker">管理中心</p>
+        <h1>账户管理</h1>
+        {% if current_principal and current_principal.access_tier == 'owner' %}
+        <span class="status-chip owner-chip">所有者 / 超级管理员</span>
+        {% endif %}
+        <p class="admin-copy">查看账户状态，并为其他账户执行必要的管理操作。</p>
+      </div>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="secondary-button" type="submit">退出登录</button>
+      </form>
+    </header>
+
+    <section class="admin-card" aria-labelledby="accounts-title">
+      <h2 id="accounts-title">账户列表</h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">用户名</th>
+              <th scope="col">角色</th>
+              <th scope="col">状态</th>
+              <th scope="col">创建时间</th>
+              <th scope="col">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user.username }}</td>
+              <td><span class="status-chip role-chip">{% if user.role == 'admin' %}管理员{% else %}用户{% endif %}</span></td>
+              <td>
+                {% if user.is_active %}
+                <span class="status-chip status-active">已启用</span>
+                {% else %}
+                <span class="status-chip status-inactive">已停用</span>
+                {% endif %}
+              </td>
+              <td>{{ user.created_at }}</td>
+              <td class="actions-cell">
+                {% if user.username == current_username %}
+                <span class="current-admin">当前登录管理员</span>
+                {% else %}
+                <div class="account-actions">
+                  <form method="post" action="{{ url_for('admin_set_active', username=user.username) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    {% if user.is_active %}
+                    <input type="hidden" name="is_active" value="false">
+                    <button class="warning-button" type="submit">停用</button>
+                    {% else %}
+                    <input type="hidden" name="is_active" value="true">
+                    <button type="submit">启用</button>
+                    {% endif %}
+                  </form>
+                  <p class="admin-permission-warning">提升为管理员只授予登录资格，不授予所有者权限。</p>
+                  <form class="role-form" method="post" action="{{ url_for('admin_set_role', username=user.username) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <label for="role-{{ loop.index }}">角色</label>
+                    <select id="role-{{ loop.index }}" name="role">
+                      <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>管理员</option>
+                      <option value="user" {% if user.role == 'user' %}selected{% endif %}>用户</option>
+                    </select>
+                    <button class="secondary-button" type="submit">更新角色</button>
+                  </form>
+                  <form class="password-form" method="post" action="{{ url_for('admin_reset_password', username=user.username) }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <label for="password-{{ loop.index }}">新密码</label>
+                    <input id="password-{{ loop.index }}" type="password" name="password" autocomplete="new-password" required>
+                    <button class="secondary-button" type="submit">重置密码</button>
+                  </form>
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

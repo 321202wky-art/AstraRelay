@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 | AI 群聊记忆系统</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body class="light-page">
+  <main class="login-shell">
+    <div class="auth-layout">
+      <section class="auth-showcase" aria-label="平台介绍">
+        <div class="auth-stars" aria-hidden="true"></div>
+        <div class="auth-nebula" aria-hidden="true"></div>
+        <div class="auth-showcase-content">
+          <a class="showcase-brand" href="/" aria-label="返回首页"><span class="showcase-mark" aria-hidden="true">N</span>NOVA WORKSPACE</a>
+          <div class="showcase-copy">
+            <p class="login-kicker">多智能体协作平台</p>
+            <h2>让每一次思考，<br>都有团队回应。</h2>
+            <p>在统一工作台中调度多个智能体，保留独立记忆，并以实时流式结果推进协作。</p>
+          </div>
+          <div class="showcase-stats" aria-label="平台能力">
+            <span><strong>5+</strong>协作模型</span>
+            <span><strong>实时</strong>流式响应</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-card" aria-labelledby="login-title">
+        <a class="auth-home-link" href="{{ url_for('home') }}"><span aria-hidden="true">&larr;</span>返回首页</a>
+        <div class="login-brand" aria-label="AI 群聊记忆系统">
+          <span class="brand-mark" aria-hidden="true">AI</span>
+          <span>AI 群聊记忆系统</span>
+        </div>
+        <header>
+          <p class="login-kicker">智能协作中心</p>
+          <h1 id="login-title">欢迎回来</h1>
+          <p class="login-copy">登录后进入多智能体协作工作台</p>
+        </header>
+
+        {% if error %}
+        <p class="login-alert" role="alert">{{ error }}</p>
+        {% endif %}
+        {% if message %}
+        <p class="login-notice" role="status">{{ message }}</p>
+        {% endif %}
+
+        <form class="login-form" method="post">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ next }}">
+          <div class="form-field">
+            <label for="email">邮箱</label>
+            <input id="email" type="email" name="email" autocomplete="email" required>
+          </div>
+          <div class="form-field">
+            <label for="password">密码</label>
+            <input id="password" type="password" name="password" autocomplete="current-password" required>
+          </div>
+          <button type="submit">进入工作台</button>
+        </form>
+        <p class="auth-switch"><a href="{{ url_for('forgot_password') }}">忘记密码？</a></p>
+        <p class="auth-switch">还没有账号？<a href="{{ url_for('register') }}">立即注册</a></p>
+        <p class="auth-switch admin-entry">需要管理账户？<a href="{{ url_for('admin_login') }}">管理员登录</a></p>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
